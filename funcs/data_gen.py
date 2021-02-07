@@ -282,7 +282,7 @@ def Data_Gen_Color_MNIST(batch_size=64, validation_split=.2, random_seed=42):
     y = torch.tensor(np_data['t_y']).int()                  # [N, 3], i.e., the true generating factor
     f = torch.tensor(np_data['t_f']).int()
     if len(np_data['zs_x'])!=0:
-        zs_x = torch.tensor(np_data['zs_x']).transpose(1,3) 
+        zs_x = torch.tensor(np_data['zs_x'])
         zs_y = torch.tensor(np_data['zs_y']).int()
         zs_f = torch.tensor(np_data['zs_f']).int()
     else:

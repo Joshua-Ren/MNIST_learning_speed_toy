@@ -287,26 +287,73 @@ class Bob_agent_LSTM(nn.Module):
     def init_hidden_and_cell(self):
         return torch.zeros(1, self.hid_size).cuda()
 
+class View(nn.Module):
+    def __init__(self, size):
+        super(View, self).__init__()
+        self.size = size
 
+    def forward(self, tensor):
+        return tensor.view(self.size)
+    
 class LeNet(nn.Module):
    def __init__(self, out_dim=NG1, hid_size=128):
        super(LeNet,self).__init__()
-       self.conv1 = nn.Conv2d(3, 6, 5, padding=2)
-       self.conv2 = nn.Conv2d(6, 16, 5)
-       self.fc1 = nn.Linear(16*5*5, hid_size)
-       self.fc2 = nn.Linear(hid_size, 84)
-       self.fc3 = nn.Linear(84, out_dim)
+       self.Alice = nn.Sequential(
+               nn.Conv2d(3, 6, 5, padding=2),
+               nn.ReLU(),
+               nn.MaxPool2d(1,(2,2)),
+               nn.Conv2d(6, 16, 5),
+               nn.ReLU(),
+               nn.MaxPool2d(1,(2,2)),
+               View((-1, 400)),               #16*5*5
+               nn.Tanh()                         # core design part               
+               )
+       self.Bob = nn.Sequential(
+               nn.Linear(400, hid_size),
+               nn.ReLU(),
+               nn.Linear(hid_size, 84),
+               nn.ReLU(),
+               nn.Linear(84, out_dim)              
+               )
+       
    def forward(self, x):
-       x = F.max_pool2d(F.relu(self.conv1(x)), (2, 2))
-       x = F.max_pool2d(F.relu(self.conv2(x)), (2, 2))
-       x = x.view(-1, self.num_flat_features(x))
-       x = F.relu(self.fc1(x))
-       x = F.relu(self.fc2(x))
-       hid = self.fc3(x)
-       return hid 
+       mid = self.Alice(x)
+       hid = self.Bob(mid)
+       return hid, mid
    def num_flat_features(self, x):
        size = x.size()[1:]
        num_features = 1
        for s in size:
            num_features *= s
        return num_features            
+
+
+
+
+## ================= Backup of the original LeNet ===============
+#class LeNet(nn.Module):
+#   def __init__(self, out_dim=NG1, hid_size=128):
+#       super(LeNet,self).__init__()
+#       self.conv1 = nn.Conv2d(3, 6, 5, padding=2)
+#       self.conv2 = nn.Conv2d(6, 16, 5)
+#       self.fc1 = nn.Linear(16*5*5, hid_size)
+#       self.fc2 = nn.Linear(hid_size, 84)
+#       self.fc3 = nn.Linear(84, out_dim)
+#       self.tanh = nn.Tanh()
+#       self.sigm = nn.Sigmoid()
+#   def forward(self, x):
+#       x = F.max_pool2d(F.relu(self.conv1(x)), (2, 2))
+#     
+#       x = F.max_pool2d(F.relu(self.conv2(x)), (2, 2))
+#       mid = self.tanh(x.view(-1, self.num_flat_features(x)))
+#       
+#       x = F.relu(self.fc1(mid))
+#       x = F.relu(self.fc2(x))
+#       hid = self.fc3(x)
+#       return hid, mid
+#   def num_flat_features(self, x):
+#       size = x.size()[1:]
+#       num_features = 1
+#       for s in size:
+#           num_features *= s
+#       return num_features    
