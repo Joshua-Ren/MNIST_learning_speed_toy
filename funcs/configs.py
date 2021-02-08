@@ -6,7 +6,7 @@ Created on Sun Oct 11 20:46:32 2020
 @author: joshua
 """
 import numpy as np
-SIGMOID_MODE = True
+SIGMOID_MODE = False
 CLASSIFY_NUM = 2
 NG1, NG2=10, 10
 X_DIM = NG1+NG2
