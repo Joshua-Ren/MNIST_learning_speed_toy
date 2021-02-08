@@ -471,7 +471,7 @@ if __name__ == "__main__":
                 all_results[key_name] = gen_ability_list[i][key]        
         np.save(path, all_results)
 
-
+    print('start observing inter_results')
     # ============= Get results of inter_results ===============
     gen_ability_list = []
     for i in range(len(inter_results['tmp_agents'])):
@@ -481,6 +481,7 @@ if __name__ == "__main__":
         gen_ability_list.append(gen_ability)
     _save_gen_results(gen_ability_list, inter_results, path='results/gen_results_inter.npy')   
         
+    print('start observing pre_results')
     # ============= Get results of pre_results ===============
     gen_ability_list = []
     for i in range(len(pre_results['tmp_agents'])):
