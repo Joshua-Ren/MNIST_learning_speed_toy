@@ -306,7 +306,7 @@ class LeNet(nn.Module):
                nn.ReLU(),
                nn.MaxPool2d(1,(2,2)),
                View((-1, 400)),               #16*5*5
-#               nn.Tanh()                         # core design part               
+               nn.Tanh()                         # core design part               
                )
        self.Bob = nn.Sequential(
                nn.Linear(400, hid_size),

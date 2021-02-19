@@ -35,8 +35,11 @@ seed_torch()
 
 
 CE_LOSS = nn.CrossEntropyLoss()
+CE_LOSS_EACH = nn.CrossEntropyLoss(reduce=False)
 BCE_LOSS = nn.BCELoss()
+BCE_LOSS_EACH = nn.BCELoss(reduce=False)
 MSE_LOSS = nn.MSELoss()
+MSE_LOSS_EACH = nn.MSELoss(reduce=False)
 SFTMX0 = nn.Softmax(0)
 SFTMX1 = nn.Softmax(1)
 OUT_DIM_CLAS = NG1+NG2
@@ -226,7 +229,7 @@ def pop_train_from_data(agent_, data,all_x, batch_size=1, rounds=1000, topsim_fl
     return agent, results        
 
 
-def pop_train_from_agent(learner_, teacher, data_loader, all_x, rounds=1000, topsim_flag=False, print_rnd=True, lr=1e-4):
+def pop_train_from_agent(learner_, teacher, data_loader, all_x, rounds=1000, topsim_flag=False, rwd_bias=False, print_rnd=True, lr=1e-4):
     RECORD_INTERVAL = 50
     learner = copy.deepcopy(learner_)
     optim_agent_A = optim.Adam(learner.Alice.parameters(),lr=lr)
@@ -239,7 +242,7 @@ def pop_train_from_agent(learner_, teacher, data_loader, all_x, rounds=1000, top
         rnd_idx += 1
         if print_rnd:
             print(str(rnd_idx)+"-",end="") 
-        for x, _, _ in data_loader:
+        for x, y, _ in data_loader:
             inner_idx += 1
             if topsim_flag and inner_idx % RECORD_INTERVAL == 1:
                 topsim_msg, topsim_mid = get_topsim_G12(learner, all_x)
@@ -249,18 +252,32 @@ def pop_train_from_agent(learner_, teacher, data_loader, all_x, rounds=1000, top
                 results['tmp_agents'].append(tmp_agent)
             optim_agent_A.zero_grad()
             x = x.cuda().float().transpose(1,3)
+            y = y.cuda().long()
             # === Here is full-batch training, change to sub-batch later
             teach_pred, teach_mid = teacher(x)
-            teach_mid = teach_mid.detach()
+            teach_mid, teach_pred = teach_mid.detach(), teach_pred.detach()
             learn_pred, learn_mid = learner(x)
             
-            if SIGMOID_MODE:
-                teach_tgt = (teach_mid>0.5).float()
-                learn_loss = BCE_LOSS(learn_mid, teach_tgt)
-            else:
-                learn_loss = MSE_LOSS(learn_mid, teach_mid)     
+            if rwd_bias:               
+                teach_loss = CE_LOSS_EACH(teach_pred[:,:NG1], y[:,0]) + CE_LOSS_EACH(teach_pred[:,NG1:], y[:,1])
+                clamp_teach_loss = torch.clamp(teach_loss,0,10).reshape(1,-1)
+                if SIGMOID_MODE:
+                    teach_tgt = (teach_mid>0.5).float()                   
+                    learn_loss = torch.mm(clamp_teach_loss, BCE_LOSS_EACH(learn_mid, teach_tgt)).mean()/400
+                    record_loss = BCE_LOSS(learn_mid,teach_tgt)
+                else:
+                    learn_loss = torch.mm(clamp_teach_loss, MSE_LOSS_EACH(learn_mid, teach_mid)).mean()/400
+                    record_loss = MSE_LOSS(learn_mid, teach_mid)
+            else:           
+                if SIGMOID_MODE:
+                    teach_tgt = (teach_mid>0.5).float()
+                    learn_loss = BCE_LOSS(learn_mid, teach_tgt)
+                    record_loss = learn_loss
+                else:
+                    learn_loss = MSE_LOSS(learn_mid, teach_mid) 
+                    record_loss = learn_loss
                 
-            results['t_loss'].append(learn_loss.data.item())
+            results['t_loss'].append(record_loss.data.item())
             learn_loss.backward()
             optim_agent_A.step()  
     return learner, results
@@ -433,31 +450,35 @@ if __name__ == "__main__":
     ##plt.plot(inter_results['t_loss'])
     #
     #
-    #def _show_data_image(x, y):
-    #    all_img = x.cpu()
-    #    big_images = np.zeros((280,280,3))
-    #    for ii in range(10):
-    #        for jj in range(10):
-    #            index = 10*ii+jj
-    #            if index < x.shape[0]:
-    #                i = y[10*ii+jj][0]
-    #                j = y[10*ii+jj][1]
-    #                big_images[i*28:(i+1)*28,j*28:(j+1)*28,:] = all_img[index].float()/255
-    #    plt.imshow(big_images)   
-    ##_show_data_image(order_all_vx, order_all_vy)
+#    def _show_data_image(x, y):
+#        all_img = x.cpu()
+#        big_images = np.zeros((280,280,3))
+#        for ii in range(10):
+#            for jj in range(10):
+#                index = 10*ii+jj
+#                if index < x.shape[0]:
+#                    i = y[10*ii+jj][0]
+#                    j = y[10*ii+jj][1]
+#                    big_images[i*28:(i+1)*28,j*28:(j+1)*28,:] = all_img[index].float()/255
+#        plt.imshow(big_images)   
+    #_show_data_image(order_all_vx, order_all_vy)
 #    hid, mid = pop_adul(order_all_vx.transpose(1,3).float())
 #    y1_pred, y2_pred = hid[:,:NG1].argmax(1), hid[:,NG1:].argmax(1)
 #    y_pred = torch.cat((y1_pred.unsqueeze(1),y2_pred.unsqueeze(1)),axis=1)
 #    plt.hist(mid.cpu().detach().reshape(-1))
-    
-    
+
+ 
+   
     pop_infa = new_pop_CLAS(1)[0]
-    pop_adul, inter_results = pop_interact_clas(pop_infa, train_loader, zs_loader, all_x,all_y, rounds=INT_ROUNDS, topsim_flag=True,lr=1e-4)     
+    pop_adul, inter_results = pop_interact_clas(pop_infa, train_loader, zs_loader, all_x,all_y, rounds=INT_ROUNDS, topsim_flag=True,lr=5e-4)     
 #    _, gen_ability = pop_interact_Bob_fine(pop_infa, train_loader, zs_loader, all_x, B_rounds=10, F_rounds=4, topsim_flag=True, print_rnd=True,lr=1e-3,lr_fine=1e-5)  
     pop_infa = new_pop_CLAS(1)[0]
-    pop_teen, pre_results =  pop_train_from_agent(pop_infa, pop_adul, train_loader, all_x, rounds=PRE_ROUNDS, topsim_flag=True, print_rnd=True, lr=1e-4)
+    pop_teen, pre_results =  pop_train_from_agent(pop_infa, pop_adul, train_loader, all_x, rounds=PRE_ROUNDS, topsim_flag=True, rwd_bias=False, print_rnd=True, lr=1e-4)
 
 
+
+
+#
     def _save_gen_results(gen_ability_results, base_results, path='results/gen_results_interact.npy'):
         gen_ability_list = gen_ability_results
         KEYS = ['t_loss','t_acc','v_loss','v_acc','topsim_mid','topsim_msg']
@@ -466,9 +487,10 @@ if __name__ == "__main__":
         for key in KEYS:
             if key in base_results.keys():
                 all_results[key]=base_results[key]
-            for i in range(len(gen_ability_list)):
-                key_name = str(key)+'_'+str(i)
-                all_results[key_name] = gen_ability_list[i][key]        
+            if key in gen_ability_list[0].keys():
+                for i in range(len(gen_ability_list)):
+                    key_name = str(key)+'_'+str(i)
+                    all_results[key_name] = gen_ability_list[i][key]        
         np.save(path, all_results)
 
     print('start observing inter_results')
@@ -481,6 +503,7 @@ if __name__ == "__main__":
         gen_ability_list.append(gen_ability)
     _save_gen_results(gen_ability_list, inter_results, path='results/gen_results_inter.npy')   
         
+    
     print('start observing pre_results')
     # ============= Get results of pre_results ===============
     gen_ability_list = []
@@ -492,14 +515,31 @@ if __name__ == "__main__":
     _save_gen_results(gen_ability_list, pre_results, path='results/gen_results_pre.npy')           
     
     
-
+    # ============= Get results of learning speed ===============
+    print('start observing learning speed')
+    learn_speed_list = []
+    for i in range(len(pre_results['tmp_agents'])):
+        print(str(i)+"-",end="") 
+        agent = pre_results['tmp_agents'][i]
+        pop_infa = new_pop_CLAS(1)[0]
+        _, learn_speed = pop_train_from_agent(pop_infa, agent, train_loader, all_x, rounds=PRE_ROUNDS, topsim_flag=True, rwd_bias=False, print_rnd=False, lr=1e-4)
+        learn_speed_list.append(learn_speed)
+    _save_gen_results(learn_speed_list, pre_results, path='results/gen_results_pre_ls.npy')
+    
+    # ============= Get results of learning speed2 ===============
+    print('start observing learning speed2')
+    learn_speed_list = []
+    for i in range(len(inter_results['tmp_agents'])):
+        print(str(i)+"-",end="") 
+        agent = inter_results['tmp_agents'][i]
+        pop_infa = new_pop_CLAS(1)[0]
+        _, learn_speed = pop_train_from_agent(pop_infa, agent, train_loader, all_x, rounds=PRE_ROUNDS, topsim_flag=True, rwd_bias=False, print_rnd=False, lr=1e-4)
+        learn_speed_list.append(learn_speed)
+    _save_gen_results(learn_speed_list, inter_results, path='results/gen_results_inter_ls.npy')    
 #        
 #    
 """
 """
-
-
-
 
 
 

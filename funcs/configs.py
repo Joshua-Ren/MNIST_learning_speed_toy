@@ -6,7 +6,7 @@ Created on Sun Oct 11 20:46:32 2020
 @author: joshua
 """
 import numpy as np
-SIGMOID_MODE = False
+SIGMOID_MODE = True
 CLASSIFY_NUM = 2
 NG1, NG2=10, 10
 X_DIM = NG1+NG2
@@ -16,7 +16,7 @@ ZS_TABLE = []
 #ZS_TABLE = [(9,9)]
 
 
-ZS_RATIO = 0.6
+ZS_RATIO = 0.5
 
 for g1 in range(NG1):
     for g2 in range(NG2):
