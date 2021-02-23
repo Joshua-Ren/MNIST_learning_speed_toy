@@ -472,59 +472,59 @@ if __name__ == "__main__":
     pop_infa = new_pop_CLAS(1)[0]
     pop_adul, inter_results = pop_interact_clas(pop_infa, train_loader, zs_loader, all_x,all_y, rounds=INT_ROUNDS, topsim_flag=True,lr=5e-4)     
 #    _, gen_ability = pop_interact_Bob_fine(pop_infa, train_loader, zs_loader, all_x, B_rounds=10, F_rounds=4, topsim_flag=True, print_rnd=True,lr=1e-3,lr_fine=1e-5)  
-    pop_infa = new_pop_CLAS(1)[0]
-    pop_teen, pre_results =  pop_train_from_agent(pop_infa, pop_adul, train_loader, all_x, rounds=PRE_ROUNDS, topsim_flag=True, rwd_bias=False, print_rnd=True, lr=1e-4)
-
-
-
-
+#    pop_infa = new_pop_CLAS(1)[0]
+#    pop_teen, pre_results =  pop_train_from_agent(pop_infa, pop_adul, train_loader, all_x, rounds=PRE_ROUNDS, topsim_flag=True, rwd_bias=False, print_rnd=True, lr=1e-4)
 #
-    def _save_gen_results(gen_ability_results, base_results, path='results/gen_results_interact.npy'):
-        gen_ability_list = gen_ability_results
-        KEYS = ['t_loss','t_acc','v_loss','v_acc','topsim_mid','topsim_msg']
-        path = path
-        all_results = {}
-        for key in KEYS:
-            if key in base_results.keys():
-                all_results[key]=base_results[key]
-            if key in gen_ability_list[0].keys():
-                for i in range(len(gen_ability_list)):
-                    key_name = str(key)+'_'+str(i)
-                    all_results[key_name] = gen_ability_list[i][key]        
-        np.save(path, all_results)
 
-    print('start observing inter_results')
-    # ============= Get results of inter_results ===============
-    gen_ability_list = []
-    for i in range(len(inter_results['tmp_agents'])):
-        print(str(i)+"-",end="") 
-        agent = inter_results['tmp_agents'][i]
-        _, gen_ability = pop_interact_Bob_fine(agent, train_loader, zs_loader, all_x, B_rounds=10, F_rounds=4, topsim_flag=True, print_rnd=False,lr=1e-3,lr_fine=1e-5)  
-        gen_ability_list.append(gen_ability)
-    _save_gen_results(gen_ability_list, inter_results, path='results/gen_results_inter.npy')   
-        
-    
-    print('start observing pre_results')
-    # ============= Get results of pre_results ===============
-    gen_ability_list = []
-    for i in range(len(pre_results['tmp_agents'])):
-        print(str(i)+"-",end="") 
-        agent = pre_results['tmp_agents'][i]
-        _, gen_ability = pop_interact_Bob_fine(agent, train_loader, zs_loader, all_x, B_rounds=10, F_rounds=4, topsim_flag=True, print_rnd=False,lr=1e-3,lr_fine=1e-5)  
-        gen_ability_list.append(gen_ability)
-    _save_gen_results(gen_ability_list, pre_results, path='results/gen_results_pre.npy')           
-    
-    
-    # ============= Get results of learning speed ===============
-    print('start observing learning speed')
-    learn_speed_list = []
-    for i in range(len(pre_results['tmp_agents'])):
-        print(str(i)+"-",end="") 
-        agent = pre_results['tmp_agents'][i]
-        pop_infa = new_pop_CLAS(1)[0]
-        _, learn_speed = pop_train_from_agent(pop_infa, agent, train_loader, all_x, rounds=PRE_ROUNDS, topsim_flag=True, rwd_bias=False, print_rnd=False, lr=1e-4)
-        learn_speed_list.append(learn_speed)
-    _save_gen_results(learn_speed_list, pre_results, path='results/gen_results_pre_ls.npy')
+
+
+##
+#    def _save_gen_results(gen_ability_results, base_results, path='results/gen_results_interact.npy'):
+#        gen_ability_list = gen_ability_results
+#        KEYS = ['t_loss','t_acc','v_loss','v_acc','topsim_mid','topsim_msg']
+#        path = path
+#        all_results = {}
+#        for key in KEYS:
+#            if key in base_results.keys():
+#                all_results[key]=base_results[key]
+#            if key in gen_ability_list[0].keys():
+#                for i in range(len(gen_ability_list)):
+#                    key_name = str(key)+'_'+str(i)
+#                    all_results[key_name] = gen_ability_list[i][key]        
+#        np.save(path, all_results)
+#
+#    print('start observing inter_results')
+#    # ============= Get results of inter_results ===============
+#    gen_ability_list = []
+#    for i in range(len(inter_results['tmp_agents'])):
+#        print(str(i)+"-",end="") 
+#        agent = inter_results['tmp_agents'][i]
+#        _, gen_ability = pop_interact_Bob_fine(agent, train_loader, zs_loader, all_x, B_rounds=10, F_rounds=4, topsim_flag=True, print_rnd=False,lr=1e-3,lr_fine=1e-5)  
+#        gen_ability_list.append(gen_ability)
+#    _save_gen_results(gen_ability_list, inter_results, path='results/gen_results_inter.npy')   
+#        
+#    
+#    print('start observing pre_results')
+#    # ============= Get results of pre_results ===============
+#    gen_ability_list = []
+#    for i in range(len(pre_results['tmp_agents'])):
+#        print(str(i)+"-",end="") 
+#        agent = pre_results['tmp_agents'][i]
+#        _, gen_ability = pop_interact_Bob_fine(agent, train_loader, zs_loader, all_x, B_rounds=10, F_rounds=4, topsim_flag=True, print_rnd=False,lr=1e-3,lr_fine=1e-5)  
+#        gen_ability_list.append(gen_ability)
+#    _save_gen_results(gen_ability_list, pre_results, path='results/gen_results_pre.npy')           
+#    
+#    
+#    # ============= Get results of learning speed ===============
+#    print('start observing learning speed')
+#    learn_speed_list = []
+#    for i in range(len(pre_results['tmp_agents'])):
+#        print(str(i)+"-",end="") 
+#        agent = pre_results['tmp_agents'][i]
+#        pop_infa = new_pop_CLAS(1)[0]
+#        _, learn_speed = pop_train_from_agent(pop_infa, agent, train_loader, all_x, rounds=PRE_ROUNDS, topsim_flag=True, rwd_bias=False, print_rnd=False, lr=1e-4)
+#        learn_speed_list.append(learn_speed)
+#    _save_gen_results(learn_speed_list, pre_results, path='results/gen_results_pre_ls.npy')
     
     # ============= Get results of learning speed2 ===============
     print('start observing learning speed2')
